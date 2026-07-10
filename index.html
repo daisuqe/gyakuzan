@@ -170,6 +170,17 @@
   #startOverlay h2 { font-size: clamp(29px,6.5vmin,42px); }  /* gyakuzan title +30% */
   .overlay p { font-size: clamp(12px,2vmin,15px); color: var(--text-dim); line-height: 2; max-width: 560px; }
   .overlay .big { font-size: clamp(34px,8vmin,52px); font-weight: 800; color: var(--mint); }
+  .rank-title { font-size: clamp(10px,1.8vmin,13px); letter-spacing: .34em; color: var(--text-dim); margin-top: 4px; }
+  .ranking { list-style: none; margin: 2px 0; padding: 0; width: min(320px, 74vw);
+    display: flex; flex-direction: column; gap: 4px; max-height: 46vh; overflow: hidden; }
+  .ranking li { display: flex; align-items: center; justify-content: space-between;
+    font-variant-numeric: tabular-nums; font-size: clamp(13px,2.2vmin,16px);
+    padding: 6px 14px; border-radius: 10px; background: rgba(255,255,255,0.05); color: var(--text-dim); }
+  .ranking li .rk { width: 2.2em; text-align: left; }
+  .ranking li .sc { font-weight: 700; color: var(--text); }
+  .ranking li.cur { background: linear-gradient(140deg, rgba(100,196,255,0.30), rgba(100,196,255,0.14));
+    color: var(--text); box-shadow: 0 0 0 1px rgba(100,196,255,0.45); }
+  .ranking li.cur .rk { color: var(--text); }
   .rules { text-align: left; display: inline-block; }
   .btn {
     border: none; border-radius: 999px; padding: 13px 40px; font-family: inherit;
@@ -237,10 +248,11 @@
   <button class="btn" id="startBtn">START</button>
 </div>
 <div class="overlay hidden" id="overOverlay">
-  <h2>おつかれさま</h2>
   <div class="big" id="finalScore">0</div>
   <p id="finalDetail"></p>
-  <button class="btn" id="retryBtn">もういちど</button>
+  <div class="rank-title">RANKING</div>
+  <ol class="ranking" id="ranking"></ol>
+  <button class="btn" id="retryBtn">Try again</button>
 </div>
 
 <script>
@@ -714,10 +726,35 @@ function start(){
   ensureAudio(); Music.start();
   lastFrame=performance.now(); requestAnimationFrame(loop);
 }
+/* ---- ranking (top 10, persisted where possible) ---- */
+const RANK_KEY='gyakuzan_scores';
+let scores=loadScores();
+function loadScores(){ try{ const s=JSON.parse(localStorage.getItem(RANK_KEY)||'[]'); return Array.isArray(s)?s.filter(n=>typeof n==='number'):[]; }catch(e){ return []; } }
+function saveScores(){ try{ localStorage.setItem(RANK_KEY, JSON.stringify(scores)); }catch(e){} }
+function submitScore(v){
+  // insert keeping descending order; new score ranks above equal earlier ones
+  let idx=scores.findIndex(s=>v>s); if(idx<0) idx=scores.length;
+  scores.splice(idx,0,v); scores=scores.slice(0,10); saveScores();
+  return idx<10?idx:-1;
+}
+function renderRanking(hi){
+  const ol=document.getElementById('ranking'); ol.innerHTML='';
+  const n=Math.max(scores.length,1);
+  for(let i=0;i<Math.min(n,10);i++){
+    const li=document.createElement('li');
+    const s=(i<scores.length)?scores[i]:'—';
+    li.innerHTML=`<span class="rk">${i+1}</span><span class="sc">${s}</span>`;
+    if(i===hi) li.classList.add('cur');
+    ol.appendChild(li);
+  }
+}
 function gameOver(){
   running=false; sfx.over();
+  const rank=submitScore(score);
   document.getElementById('finalScore').textContent=score;
-  document.getElementById('finalDetail').textContent=`けした数 ${clears} ／ レベル ${gameLevel}`;
+  document.getElementById('finalDetail').textContent =
+    (rank===0?'★ NEW BEST ★  ':'') + `けした数 ${clears} ／ レベル ${gameLevel}`;
+  renderRanking(rank);
   document.getElementById('overOverlay').classList.remove('hidden');
 }
 document.getElementById('startBtn').addEventListener('click',start);
@@ -775,7 +812,12 @@ window.__gy = {
   press: (k)=>{ running=true; press(k); },
   exprText: ()=>exprLine.textContent,
   fontPx: ()=>parseFloat(exprLine.style.fontSize||getComputedStyle(exprLine).fontSize),
-  fits: ()=>exprLine.scrollWidth<=exprLine.clientWidth+2
+  fits: ()=>exprLine.scrollWidth<=exprLine.clientWidth+2,
+  clearScores: ()=>{ scores=[]; saveScores(); },
+  forceOver: (s)=>{ running=true; score=s; clears=3; gameLevel=1; gameOver(); },
+  ranking: ()=>[...document.querySelectorAll('#ranking li')].map(li=>({ sc:li.querySelector('.sc').textContent, cur:li.classList.contains('cur') })),
+  overHasH2: ()=>!!document.querySelector('#overOverlay h2'),
+  retryText: ()=>document.getElementById('retryBtn').textContent
 };
 </script>
 </body>
