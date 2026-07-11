@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
@@ -223,8 +223,8 @@
     <span>SCORE<b id="score">0</b></span>
     <span>LV<b id="level">1</b></span>
     <span>CLEAR<b id="clears">0</b></span>
-    <button id="muteBtn" title="サウンド切替">♪</button>
-    <button id="pauseBtn" title="一時停止">❚❚</button>
+    <button id="muteBtn" title="Sound">♪</button>
+    <button id="pauseBtn" title="Pause">❚❚</button>
   </div>
 </div>
 
@@ -265,8 +265,8 @@
 <div class="overlay" id="startOverlay">
   <h2>gyakuzan</h2>
   <p class="rules">
-    ✦ <b>3桁の数字消し・数字全部使用・全てのキー使用</b>で周囲のブロックも消える<br>
-    ✦ 入力の数字は <b>5けたまで</b>
+    ✦ Clear a <b>3-digit block, all digits, or all keys</b> to clear nearby blocks too<br>
+    ✦ Numbers you type can be <b>up to 5 digits</b>
   </p>
   <button class="btn" id="startBtn">START</button>
 </div>
@@ -747,9 +747,9 @@ function press(k){
     const hasOp=tokens.some(t=>['+','-','*','/'].includes(t));
     const es=exprStr();
     const val=hasOp?evaluateTokens(tokens):null;
-    if(!hasOp){ resetKeys(); flashLine('けいさんしてね','miss'); shake(); sfx.miss(); }
-    else if(val===null){ resetKeys(); flashLine('しきが へん…','miss'); shake(); sfx.miss(); }
-    else { const ok=tryClear(val); resetKeys(); flashLine(es+'<span class="ans"> ＝ '+val+(ok?' ✓':' …いない')+'</span>', ok?'hit':'miss'); if(!ok){ shake(); sfx.miss(); } }
+    if(!hasOp){ resetKeys(); flashLine('add a sign','miss'); shake(); sfx.miss(); }
+    else if(val===null){ resetKeys(); flashLine('bad sum','miss'); shake(); sfx.miss(); }
+    else { const ok=tryClear(val); resetKeys(); flashLine(es+'<span class="ans"> = '+val+(ok?' ✓':' ...no match')+'</span>', ok?'hit':'miss'); if(!ok){ shake(); sfx.miss(); } }
     return;
   }
   const el=keyEls[k]; if(!el||el.classList.contains('used')) return;
@@ -816,7 +816,7 @@ function gameOver(){
   const rank=submitScore(score);
   document.getElementById('finalScore').textContent=score;
   document.getElementById('finalDetail').textContent =
-    (rank===0?'★ NEW BEST ★  ':'') + `けした数 ${clears} ／ レベル ${gameLevel}`;
+    (rank===0?'★ NEW BEST ★  ':'') + `Clears ${clears} / Level ${gameLevel}`;
   renderRanking(rank);
   document.getElementById('overOverlay').classList.remove('hidden');
 }
