@@ -143,6 +143,7 @@
     flex: 1 1 auto; min-height: 0;
     display: grid; grid-template-columns: repeat(4, 1fr);
     grid-auto-rows: 1fr; gap: clamp(5px,1vmin,9px);
+    align-content: center;   /* keys never stretch taller than wide; centre in tall panels */
   }
   .key {
     border: none; border-radius: 12px; font-family: inherit;
@@ -676,7 +677,13 @@ function fieldShake(){ const w=document.querySelector('.field-wrap'); w.classLis
 const keyEls={}; document.querySelectorAll('.key[data-k]').forEach(el=>{ keyEls[el.dataset.k]=el; });
 // key glyphs ~70% of button height
 function sizeKeys(){
-  const sample=keyEls['7']; if(!sample) return; const h=sample.getBoundingClientRect().height; if(!h) return;
+  const sample=keyEls['7']; if(!sample) return;
+  const colW=sample.getBoundingClientRect().width; if(!colW) return;
+  const keys=document.getElementById('keys');
+  const rowGap=parseFloat(getComputedStyle(keys).rowGap)||8;
+  const fillRow=(keys.clientHeight-4*rowGap)/5;                          // height if rows filled the panel
+  const h=Math.max(20, Math.min(fillRow>0?fillRow:1e9, colW*0.82));      // cap: keys never taller than wide
+  keys.style.gridAutoRows=h+'px';
   const fs=h*0.7;             // number-key base: 70% of button height
   const big=fs*1.3;           // non-number base: 1.3×
   const bump=1.1;             // +10% for every key except C
