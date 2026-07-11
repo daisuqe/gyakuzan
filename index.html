@@ -856,7 +856,7 @@ let ambient=[], ambW=0, ambH=0, ambInit=false, ambT=0;
 function ambientResize(){ ambW=bgfx.width=window.innerWidth; ambH=bgfx.height=window.innerHeight;
   if(!ambInit){ ambInit=true; const N=7+Math.floor(Math.random()*25);   // ×0.7 of doubled ≈ 7–31
     for(let i=0;i<N;i++) ambient.push({ x:Math.random()*ambW, baseY:Math.random()*ambH,
-      s:5.6+Math.random()*7, spd:(0.10+Math.random()*0.20)*1.3, amp:14+Math.random()*30,   // size ×0.7 of doubled (≈5.6–12.6px)
+      s:3.92+Math.random()*4.9, spd:(0.10+Math.random()*0.20)*1.3, amp:14+Math.random()*30,   // size ×0.7 again (≈3.9–8.8px)
       ph:Math.random()*6.28, w:0.12+Math.random()*0.22, a:0.12+Math.random()*0.16 }); } } // ~0.20 avg, varied brightness
 let ambPrev=0;
 function ambientLoop(now){
