@@ -266,7 +266,8 @@
   <h2>gyakuzan</h2>
   <p class="rules">
     ✦ Clear a <b>3-digit block, all digits, or all keys</b> to clear nearby blocks too<br>
-    ✦ Numbers you type can be <b>up to 5 digits</b>
+    ✦ Numbers you type can be <b>up to 5 digits</b><br>
+    ✦ Adding 0, subtracting 0, multiplying by 1, and dividing by 1 are <b>not allowed</b>
   </p>
   <button class="btn" id="startBtn">START</button>
 </div>
@@ -316,6 +317,12 @@ function parseTokens(tokens) {
   return { nums, ops };
 }
 function evaluateTokens(tokens){ const p = parseTokens(tokens); return p ? evalTokens(p.nums,p.ops) : null; }
+// no-op operations (+0, -0, *1, /1) are forbidden — checked only on '=' (typing "2*1" may still become "2*13")
+function hasTrivialOp(tokens){ const p=parseTokens(tokens); if(!p) return false;
+  for(let i=0;i<p.ops.length;i++){ const op=p.ops[i], n=p.nums[i+1];
+    if((op==='+'||op==='-')&&n===0) return true;
+    if((op==='*'||op==='/')&&n===1) return true; }
+  return false; }
 /* key = expression length (digits + operators); LV n -> PATTERNS[n+2], so length grows +1 per level */
 const PATTERNS = {
   3:[[1,1]],
@@ -748,6 +755,7 @@ function press(k){
     const es=exprStr();
     const val=hasOp?evaluateTokens(tokens):null;
     if(!hasOp){ resetKeys(); flashLine('add a sign','miss'); shake(); sfx.miss(); }
+    else if(hasTrivialOp(tokens)){ resetKeys(); flashLine('no +0  -0  ×1  ÷1','miss'); shake(); sfx.miss(); }
     else if(val===null){ resetKeys(); flashLine('bad sum','miss'); shake(); sfx.miss(); }
     else { const ok=tryClear(val); resetKeys(); flashLine(es+'<span class="ans"> = '+val+(ok?' ✓':' ...no match')+'</span>', ok?'hit':'miss'); if(!ok){ shake(); sfx.miss(); } }
     return;
