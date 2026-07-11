@@ -6,9 +6,9 @@
 <title>gyakuzan</title>
 <style>
   :root {
-    --bg1: #0b1626; --bg2: #10223c; --bg3: #163257;
-    --panel: rgba(120,180,255,0.06);
-    --panel-border: rgba(140,195,255,0.13);
+    --bg1: #05090f; --bg2: #070e1a; --bg3: #0a1526;
+    --panel: rgba(0,0,0,0.34);
+    --panel-border: rgba(150,205,255,0.45);
     --text: #eaf1fb; --text-dim: #8ba6cf;
     --mint: #4aa4f0; --peach: #6f9ff7; --lilac: #9db4ff;
     --accent: #64c4ff; --danger: #ff9db0; --gold: #a6e9ff;
@@ -29,7 +29,8 @@
     display: flex; flex-direction: column;
     height: 100dvh; width: 100vw;
   }
-  .orb { position: fixed; border-radius: 50%; filter: blur(70px); opacity: .16; pointer-events: none; z-index: 0; }
+  #bgfx { position: fixed; inset: 0; z-index: 5; pointer-events: none; }
+  .orb { position: fixed; border-radius: 50%; filter: blur(70px); opacity: .08; pointer-events: none; z-index: 0; }
   .orb.a { width: 34vmin; height: 34vmin; background: #4488e6; top: -6vmin; left: -6vmin; animation: drift 26s ease-in-out infinite alternate; }
   .orb.b { width: 30vmin; height: 30vmin; background: #4f8fe0; bottom: -5vmin; right: -4vmin; animation: drift 32s ease-in-out infinite alternate-reverse; }
   .orb.c { width: 26vmin; height: 26vmin; background: #6d7ff0; top: 40%; left: 55%; animation: drift 38s ease-in-out infinite alternate; }
@@ -45,8 +46,9 @@
   .logo small { font-size: .55em; color: var(--text-dim); letter-spacing: .3em; margin-left: 8px; font-weight: 400; }
   .stats { display: flex; align-items: center; gap: clamp(10px, 2vmin, 22px); font-size: clamp(9px,1.4vmin,12px); color: var(--text-dim); }
   .stats b { color: var(--text); font-size: 1.5em; margin-left: 5px; font-variant-numeric: tabular-nums; }
-  #muteBtn { border: 1px solid var(--panel-border); background: rgba(255,255,255,0.06); color: var(--text);
-    border-radius: 999px; width: 30px; height: 30px; font-size: 15px; cursor: pointer; line-height: 1; }
+  #muteBtn, #pauseBtn { border: 1px solid var(--panel-border); background: rgba(255,255,255,0.06); color: var(--text);
+    border-radius: 999px; width: 30px; height: 30px; font-size: 14px; cursor: pointer; line-height: 1;
+    display: inline-flex; align-items: center; justify-content: center; padding: 0; }
   #muteBtn.off { color: var(--text-dim); opacity: .55; }
 
   /* game area */
@@ -73,11 +75,13 @@
   @keyframes fshake { 0%,100%{transform:translate(0,0)} 20%{transform:translate(-5px,3px)} 40%{transform:translate(5px,-3px)} 60%{transform:translate(-4px,-2px)} 80%{transform:translate(4px,2px)} }
   #field {
     position: relative; border-radius: 12px;
-    background: rgba(0,0,0,0.18); overflow: hidden;
+    background: rgba(0,0,0,0.42); overflow: hidden;
   }
   #bg { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
   #fx { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
-  .gridline { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,0.05); }
+  /* ambient deer: outline of a posed 3D low-poly skeleton, drawn on the field floor, behind blocks */
+  #deer.deer { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
+  .gridline { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(160,205,255,0.16); }
 
   .block {
     position: absolute; border-radius: 14px;
@@ -88,10 +92,12 @@
     will-change: top, left;
   }
   .block { color: #12233d; z-index: 1; }
-  .block.lv1 { background: linear-gradient(150deg, #86c2fb, var(--mint)); }
+  .block.lv1 { background: linear-gradient(150deg, #5d9bda, #3f83cf); }  /* 3ボタンで作れる数はやや暗め */
   .block.lv2 { background: linear-gradient(150deg, #b0cdff, var(--peach)); }
   .block.lv3 { background: linear-gradient(150deg, #c6d2ff, var(--lilac)); }
   .block.big3 { box-shadow: 0 5px 14px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.6), 0 0 0 2px var(--gold); }
+  .block.bomb { background: linear-gradient(150deg, #e6fb84, #a9e24a) !important; color: #223608;
+    box-shadow: 0 5px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.65), 0 0 16px 2px rgba(180,240,90,0.55); }
   .block.pop { animation: pop .4s ease forwards; z-index: 3; }
   @keyframes pop { 40% { transform: scale(1.22); filter: brightness(1.3); } 100% { transform: scale(0); opacity: 0; } }
   .block.land { animation: land .2s ease; }
@@ -116,7 +122,7 @@
   }
   .display {
     flex: 0 0 auto;
-    background: rgba(0,0,0,0.28); border-radius: 12px;
+    background: rgba(0,0,0,0.5); border-radius: 12px;
     padding: clamp(10px,1.8vmin,18px) clamp(12px,2vmin,20px);
     display: flex; align-items: center; justify-content: flex-end; overflow: hidden;
   }
@@ -128,7 +134,7 @@
   .display .line .ans { color: var(--text-dim); }
   .display .line.hit { color: var(--mint); }
   .display .line.miss { color: var(--danger); }
-  .display .line .cursor { color: var(--accent); animation: blink 1.1s step-end infinite; }
+  .display .line .cursor { color: #ffe07a; animation: blink 1.1s step-end infinite; }
   @keyframes blink { 50% { opacity: 0; } }
   .display.shake { animation: shake .35s ease; }
   @keyframes shake { 20%,60% { transform: translateX(-5px);} 40%,80% { transform: translateX(5px);} }
@@ -141,22 +147,30 @@
   .key {
     border: none; border-radius: 12px; font-family: inherit;
     font-size: clamp(16px,2.8vmin,22px); font-weight: 800; color: var(--key-fg);
-    background: rgba(255,255,255,0.08);
-    box-shadow: 0 3px 0 rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.085);
+    box-shadow: 0 3px 0 rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.09);
     cursor: pointer; transition: transform .06s ease, background .18s ease, color .18s ease;
     min-height: 0; padding: 0;
     display: flex; align-items: center; justify-content: center; line-height: 1;
     text-shadow: 0 1px 2px rgba(8,14,32,0.55);
   }
   .key:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,0.28); }
-  .key.op { background: rgba(143,215,255,0.14); color: var(--key-fg);
+  .key:focus, .key:focus-visible, .btn:focus, .btn:focus-visible,
+  #muteBtn:focus, #pauseBtn:focus, button:focus-visible { outline: none; }
+  .key.op { background: rgba(130,200,255,0.16); color: var(--key-fg);
     font-family: "Hiragino Maru Gothic ProN","Zen Maru Gothic","Yu Gothic",sans-serif;
     text-transform: full-width; }
-  .key.ctl { background: rgba(110,160,220,0.14); color: var(--key-fg); font-size: clamp(14px,2.2vmin,18px); grid-column: span 2; }
-  .key.eq { grid-column: span 2; background: linear-gradient(140deg, #4a608a, #384c74); color: var(--key-fg);
+  .key.ctl { background: rgba(120,170,230,0.15); color: var(--key-fg); font-size: clamp(14px,2.2vmin,18px); grid-column: span 2; }
+  .key.eq { grid-column: span 2; background: linear-gradient(140deg, #52698f, #3e527a); color: var(--key-fg);
     text-shadow: 0 1px 3px rgba(6,12,28,0.7); }
-  .key.used { background: #090f1c; color: rgba(226,235,255,0.12); text-shadow: none;
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03); opacity: 1; filter: none; pointer-events: none; }
+  /* pressed key: the key itself lights up bright, then fades out & vanishes over ~2s */
+  .key.used { pointer-events: none; animation: keyUsed 2s ease forwards; }
+  @keyframes keyUsed {
+    0%   { opacity: 1; background: #ffffff;  color: #16283f; }
+    7%   { opacity: 1; background: #d7ecff;  color: #16283f; }
+    45%  { opacity: .78; background: #bfe0ff; color: #16283f; }
+    100% { opacity: 0; background: #a9d3ff;  color: #16283f; }
+  }
   .key.ghost { visibility: hidden; }
 
   /* overlays */
@@ -168,6 +182,8 @@
   }
   .overlay h2 { font-size: clamp(22px,5vmin,32px); letter-spacing: .1em; }
   #startOverlay h2 { font-size: clamp(29px,6.5vmin,42px); }  /* gyakuzan title +30% */
+  #pauseOverlay { background: linear-gradient(160deg, var(--bg1) 0%, var(--bg2) 55%, var(--bg3) 100%); backdrop-filter: none; }
+  #pauseOverlay h2 { font-size: clamp(28px,6vmin,40px); letter-spacing: .3em; }
   .overlay p { font-size: clamp(12px,2vmin,15px); color: var(--text-dim); line-height: 2; max-width: 560px; }
   .overlay .big { font-size: clamp(34px,8vmin,52px); font-weight: 800; color: var(--mint); }
   .rank-title { font-size: clamp(10px,1.8vmin,13px); letter-spacing: .34em; color: var(--text-dim); margin-top: 4px; }
@@ -194,6 +210,7 @@
 </style>
 </head>
 <body>
+<canvas id="bgfx"></canvas>
 <div class="orb a"></div><div class="orb b"></div><div class="orb c"></div>
 
 <div id="topbar">
@@ -203,12 +220,15 @@
     <span>LV<b id="level">1</b></span>
     <span>CLEAR<b id="clears">0</b></span>
     <button id="muteBtn" title="サウンド切替">♪</button>
+    <button id="pauseBtn" title="一時停止">❚❚</button>
   </div>
 </div>
 
 <div id="game">
   <div id="fieldPanel">
-    <div class="field-wrap"><div id="field"><canvas id="bg"></canvas><canvas id="fx"></canvas></div></div>
+    <div class="field-wrap"><div id="field"><canvas id="bg"></canvas>
+      <canvas class="deer" id="deer"></canvas>
+      <canvas id="fx"></canvas></div></div>
   </div>
   <div id="calcPanel">
     <div class="calc">
@@ -246,6 +266,10 @@
     ✦ 入力の数字は <b>5けたまで</b>
   </p>
   <button class="btn" id="startBtn">START</button>
+</div>
+<div class="overlay hidden" id="pauseOverlay">
+  <h2>PAUSE</h2>
+  <button class="btn" id="resumeBtn">Resume</button>
 </div>
 <div class="overlay hidden" id="overOverlay">
   <div class="big" id="finalScore">0</div>
@@ -371,7 +395,8 @@ const Music={ on:false, master:null, padTimer:null, arpTimer:null, ci:0, pi:0,
     o.connect(g).connect(this.master); o.start(t); o.stop(t+0.8); } };
 
 /* ============ game ============ */
-const COLS=5, ROWS=5;
+const COLS=3, ROWS=5;
+function emptyCols(){ return Array.from({length:COLS},()=>[]); }
 const field=document.getElementById('field');
 const exprLine=document.getElementById('exprLine');
 const display=document.getElementById('display');
@@ -445,9 +470,7 @@ function layout(){
   fieldW=cellW*COLS; fieldH=cellH*ROWS;
   field.style.width=fieldW+'px'; field.style.height=fieldH+'px';
   fxCanvas.width=fieldW; fxCanvas.height=fieldH; bgCanvas.width=fieldW; bgCanvas.height=fieldH; fxGrav=blockH*0.02;
-  // gridlines
-  field.querySelectorAll('.gridline').forEach(e=>e.remove());
-  for(let c=1;c<COLS;c++){ const g=document.createElement('div'); g.className='gridline'; g.style.left=(c*cellW)+'px'; field.appendChild(g); }
+  // (no column gridlines)
   render();
   if(falling) falling.el.style.left=blockLeft(falling.col)+'px';
   if(exprLine) fitDisplay();
@@ -460,19 +483,19 @@ function styleBlock(el,value){
 }
 
 let running=false, score=0, clears=0, gameLevel=1;
-let cols=[[],[],[],[],[]];   // cols[c] = array bottom-up of {value,level,el}
+let cols=emptyCols();   // cols[c] = array bottom-up of {value,level,el}
 let falling=null;            // {col,value,level,y,el}
 let nextCol=0, spawnTimer=0, lastFrame=0;
 let resultTimeout=null;
 let tokens=[];
 
 const LEVEL_UP=[0,6,15];
-const FALL_MULT=0.8;
+const FALL_MULT=0.6;
 function fallSpeed(){ return (cellH*0.6*FALL_MULT)*(1+clears*0.015)*(1+(gameLevel-1)*0.18); }
 
-function makeBlockEl(value,level,big3){
+function makeBlockEl(value,level,big3,bomb){
   const el=document.createElement('div');
-  el.className='block lv'+level+(big3?' big3':'');
+  el.className='block lv'+level+(bomb?' bomb':(big3?' big3':''));
   el.textContent=value; styleBlock(el,value); field.appendChild(el); return el;
 }
 function render(){
@@ -493,18 +516,28 @@ function pickUniqueProblem(){
   for(let i=0;i<80;i++){ const p=pickProblem(gameLevel); if(!used.has(p.value)) return p; }
   return pickProblem(gameLevel); // fallback (only if distinct values are exhausted)
 }
+// special "bomb" block: a unique 3-digit value
+function pickBombProblem(){
+  const used=currentValues();
+  for(let i=0;i<160;i++){ const p=generateProblem(3); if(p.value>=100 && !used.has(p.value)) return p; }
+  for(let v=100;v<=999;v++){ if(!used.has(v)) return { value:v, level:3 }; }
+  return { value:123, level:3 };
+}
+const BOMB_CHANCE=0.03;
 function spawn(){
   const col=chooseCol();
   if(col<0){ gameOver(); return; }
-  const p=pickUniqueProblem();
-  const el=makeBlockEl(p.value,p.level,p.value>=100);
+  const bomb=Math.random()<BOMB_CHANCE;
+  const p=bomb?pickBombProblem():pickUniqueProblem();
+  const el=makeBlockEl(p.value,p.level,p.value>=100,bomb);
   el.style.transition='none'; el.style.left=blockLeft(col)+'px';
-  falling={col,value:p.value,level:p.level,y:-cellH,el};
+  falling={col,value:p.value,level:p.level,y:-cellH,el,bomb};
   el.style.top=falling.y+'px';
 }
 function loop(ts){
   if(!running) return;
-  const dt=Math.min((ts-lastFrame)/1000,0.05); lastFrame=ts;
+  if(ts-lastFrame < 1000/30){ requestAnimationFrame(loop); return; }  // cap ~30fps
+  const dt=Math.min((ts-lastFrame)/1000,0.06); lastFrame=ts;
   if(falling){
     falling.y+=fallSpeed()*dt;
     const landY=blockTop(cols[falling.col].length);
@@ -518,7 +551,7 @@ function loop(ts){
 function landFalling(){
   const c=falling.col;
   falling.el.style.transition=''; falling.el.classList.add('land');
-  cols[c].push({value:falling.value,level:falling.level,el:falling.el});
+  cols[c].push({value:falling.value,level:falling.level,el:falling.el,bomb:falling.bomb});
   render(); sfx.land();
   falling=null; spawnTimer=0.6;
   if(cols[c].length>ROWS){ gameOver(); }
@@ -543,8 +576,8 @@ function tryClear(value){
 
   // if the match is the falling block ("空中")
   if(fromFalling){
-    if(allDigits){
-      // super move: drop it into the grid, then clear row/(col) from its landed cell
+    if(allDigits || falling.bomb){
+      // super move or bomb: drop it into the grid first, then clear from its landed cell
       const el=falling.el;
       landFalling();
       targetBlock=coordFromEl(el);   // the block object now sitting in the grid
@@ -552,9 +585,9 @@ function tryClear(value){
     } else {
       // normal pop in mid-air; 3-digit also takes the block it was about to land on
       const el=falling.el, lv=falling.level, col=falling.col;
-      const removed=[{el,level:lv}];
+      const removed=[{el,level:lv,value:value}];
       const regions=[];
-      if(value>=100 && cols[col].length){ const below=cols[col].pop(); removed.push({el:below.el,level:below.level}); render();
+      if(value>=100 && cols[col].length){ const below=cols[col].pop(); removed.push({el:below.el,level:below.level,value:below.value}); render();
         const INS=Math.max(2,gap*0.35);
         let mnx=1e9,mny=1e9,mxx=-1,mxy=-1;
         removed.forEach(b=>{ const x=b.el.offsetLeft,y=b.el.offsetTop; mnx=Math.min(mnx,x);mny=Math.min(mny,y);mxx=Math.max(mxx,x+b.el.offsetWidth);mxy=Math.max(mxy,y+b.el.offsetHeight);});
@@ -573,6 +606,11 @@ function tryClear(value){
   if(allDigits){ for(let c=0;c<COLS;c++){ if(cols[c][tr]) toRemove.add(cols[c][tr]); } } // row
   if(allDigits&&allOps){ for(let r=0;r<cols[tc].length;r++){ toRemove.add(cols[tc][r]); } } // column
 
+  // bomb block: clears the surrounding 3x3 (up/down/left/right/diagonal)
+  let bombFired=false;
+  [...toRemove].forEach(b=>{ if(b.bomb){ const cd=coordOf(b); if(cd){ bombFired=true;
+    for(let c=cd.c-1;c<=cd.c+1;c++) for(let r=cd.r-1;r<=cd.r+1;r++){ if(cols[c]&&cols[c][r]) toRemove.add(cols[c][r]); } } } });
+
   // rounded-rect highlight regions for bulk clears (computed before splice)
   const regions=[]; const INS=Math.max(2,gap*0.35);
   const cellRect=(c,r)=>({x:c*cellW, y:fieldH-(r+1)*cellH, w:cellW, h:cellH});
@@ -585,18 +623,18 @@ function tryClear(value){
   }
 
   const removed=[];
-  for(let c=0;c<COLS;c++){ const keep=[]; for(const b of cols[c]){ if(toRemove.has(b)) removed.push({el:b.el,level:b.level}); else keep.push(b); } cols[c]=keep; }
+  for(let c=0;c<COLS;c++){ const keep=[]; for(const b of cols[c]){ if(toRemove.has(b)) removed.push({el:b.el,level:b.level,value:b.value}); else keep.push(b); } cols[c]=keep; }
   render();
-  finishClear(removed,{allDigits,allOps,value,regions});
+  finishClear(removed,{allDigits,allOps,value,regions,bomb:bombFired});
   return true;
 }
 function finishClear(removed,info){
   const n=removed.length;
+  // score = sum of cleared block numbers, × multiplier
   let mult=1, label='', ultra=false;
-  if(info.allDigits&&info.allOps){ mult=6; label='ULTRA!'; ultra=true; }
-  else if(info.allDigits){ mult=4; label='SPECIAL!'; }
-  else if(info.value>=100){ mult=1.6; label='COMBO!'; }
-  else if(n>=2){ mult=1.3; }
+  if(info.allDigits&&info.allOps){ mult=20; label='ULTRA!'; ultra=true; }   // all digits + all symbols
+  else if(info.allDigits){ mult=10; label='SPECIAL!'; }                     // all digits used
+  else if(info.bomb){ mult=10; }                                            // special (bomb) block
   const special=!!label;
   // rounded-rect highlights behind the cleared range (row band / column band / bounding box)
   if(info.regions && info.regions.length){
@@ -619,9 +657,11 @@ function finishClear(removed,info){
     if(ultra) emit(cx,cy,'#a7c4ff',24,blockH*0.24,wide*1.1);
     fieldShake();
   }
-  // scoring
-  let base=0; removed.forEach(b=>base+=100*b.level); base+=10*tokens.length;
-  const gained=Math.round(base*mult + (n>1? n*n*40 : 0));
+  if(info.bomb){ fieldShake(); const cx=fieldW/2, cy=fieldH/2; ring(cx,cy,'#c8f06a',Math.max(fieldW,fieldH)*0.4);
+    emit(cx,cy,'#d8f57a',24,blockH*0.24,Math.min(fieldW,fieldH)*0.35); }
+  // scoring: sum of cleared block numbers × multiplier
+  let base=0; removed.forEach(b=>base+=(b.value||0));
+  const gained=base*mult;
   score+=gained; clears++;
   if(gameLevel<3 && clears>=LEVEL_UP[gameLevel]) gameLevel++;
   updateHUD();
@@ -715,12 +755,13 @@ function updateHUD(){ scoreEl.textContent=score; levelEl.textContent=gameLevel; 
 function start(){
   document.getElementById('startOverlay').classList.add('hidden');
   document.getElementById('overOverlay').classList.add('hidden');
+  document.getElementById('pauseOverlay').classList.add('hidden'); paused=false;
   field.querySelectorAll('.block,.floatlabel').forEach(e=>e.remove());
   parts=[]; rings=[]; bgRects=[];
   if(fxc) fxc.clearRect(0,0,fxCanvas.width,fxCanvas.height);
   if(bgc) bgc.clearRect(0,0,bgCanvas.width,bgCanvas.height);
   running=true; score=0; clears=0; gameLevel=1;
-  cols=[[],[],[],[],[]]; falling=null; nextCol=0; spawnTimer=0.35;
+  cols=emptyCols(); falling=null; nextCol=0; spawnTimer=0.35;
   if(flashTimer){ clearTimeout(flashTimer); flashTimer=null; }
   resetKeys(); renderExpr(); updateHUD(); layout();
   ensureAudio(); Music.start();
@@ -728,8 +769,9 @@ function start(){
 }
 /* ---- ranking (top 10, persisted where possible) ---- */
 const RANK_KEY='gyakuzan_scores';
+const DEFAULT_SCORES=[10000,9000,8000,7000,6000,5000,4000,3000,2000,1000];
 let scores=loadScores();
-function loadScores(){ try{ const s=JSON.parse(localStorage.getItem(RANK_KEY)||'[]'); return Array.isArray(s)?s.filter(n=>typeof n==='number'):[]; }catch(e){ return []; } }
+function loadScores(){ try{ const s=JSON.parse(localStorage.getItem(RANK_KEY)||'[]'); const a=Array.isArray(s)?s.filter(n=>typeof n==='number'):[]; return a.length?a:DEFAULT_SCORES.slice(); }catch(e){ return DEFAULT_SCORES.slice(); } }
 function saveScores(){ try{ localStorage.setItem(RANK_KEY, JSON.stringify(scores)); }catch(e){} }
 function submitScore(v){
   // insert keeping descending order; new score ranks above equal earlier ones
@@ -767,6 +809,16 @@ muteBtn.addEventListener('click',()=>{
   Music.setMuted(muted);
 });
 
+// pause / resume — shows an opaque overlay so the board is hidden
+let paused=false;
+function pauseGame(){ if(!running||paused) return; paused=true; running=false;
+  document.getElementById('pauseOverlay').classList.remove('hidden'); }
+function resumeGame(){ if(!paused) return; paused=false; running=true;
+  document.getElementById('pauseOverlay').classList.add('hidden');
+  lastFrame=performance.now(); requestAnimationFrame(loop); }
+document.getElementById('pauseBtn').addEventListener('click',()=>{ paused?resumeGame():pauseGame(); });
+document.getElementById('resumeBtn').addEventListener('click',resumeGame);
+
 /* ---- responsive + no double-tap zoom ---- */
 const ro=new ResizeObserver(()=>layout()); ro.observe(document.getElementById('fieldPanel'));
 window.addEventListener('resize',layout);
@@ -776,6 +828,107 @@ let lastTouch=0;
 document.addEventListener('touchend',e=>{ const now=Date.now(); if(now-lastTouch<=350) e.preventDefault(); lastTouch=now; },{passive:false});
 document.addEventListener('gesturestart',e=>e.preventDefault());
 layout();
+
+/* ---- ambient background: large, dark, very slow particles drifting left→right ---- */
+const bgfx=document.getElementById('bgfx'), bgx=bgfx.getContext('2d');
+let ambient=[], ambW=0, ambH=0, ambInit=false, ambT=0;
+function ambientResize(){ ambW=bgfx.width=window.innerWidth; ambH=bgfx.height=window.innerHeight;
+  if(!ambInit){ ambInit=true; const N=5+Math.floor(Math.random()*18);   // 3–15 +50% ≈ 5–22
+    for(let i=0;i<N;i++) ambient.push({ x:Math.random()*ambW, baseY:Math.random()*ambH,
+      s:4+Math.random()*5, spd:(0.10+Math.random()*0.20)*1.3, amp:14+Math.random()*30,
+      ph:Math.random()*6.28, w:0.12+Math.random()*0.22, a:0.12+Math.random()*0.16 }); } } // ~0.20 avg, varied brightness
+let ambPrev=0;
+function ambientLoop(now){
+  requestAnimationFrame(ambientLoop);
+  if(!ambPrev) ambPrev=now||0;
+  if((now||0)-ambPrev < 1000/30) return;   // cap ~30fps
+  ambPrev=now||0;
+  ambT+=0.016; bgx.clearRect(0,0,ambW,ambH);
+  for(const p of ambient){
+    p.x+=p.spd; if(p.x-p.s>ambW){ p.x=-p.s; p.baseY=Math.random()*ambH; }  // wrap left→right
+    const y=p.baseY+Math.sin(ambT*p.w+p.ph)*p.amp;                          // gentle bob
+    bgx.save();
+    bgx.shadowColor=`rgba(255,236,168,${p.a})`; bgx.shadowBlur=p.s*1.4;      // warm/yellow soft glow
+    bgx.fillStyle=`rgba(255,236,168,${p.a})`;
+    bgx.fillRect(p.x-p.s/2, y-p.s/2, p.s, p.s);   // small axis-aligned square, no rotation
+    bgx.restore();
+  }
+}
+ambientResize(); window.addEventListener('resize',ambientResize); requestAnimationFrame(ambientLoop);
+
+/* ---- ambient deer: user OBJ (model/sika.obj), part-rigged, 2D wireframe only, ~30fps ---- */
+const SIKA_V=[0.2269, 0.7878, 0.1301, 0.1923, 0.6332, 0.1541, -0.4655, 0.6534, 0.1301, -0.4174, 0.5046, 0.1541, 0.0418, 0.8183, 0.1015, 0.0518, 0.5955, 0.1541, 0.2889, 1.1515, 0.0764, 0.187, 1.1563, 0.0731, 0.335, 1.2611, 0.0731, 0.2117, 1.2767, 0.055, 0.5313, 1.1248, 0.002, 0.5631, 1.1752, 0.002, 0.256, 0.7738, 0.001, 0.2381, 0.505, 0.0489, 0.3168, 1.1316, 0.002, 0.0705, 0.5375, 0.0489, -0.4249, 0.4778, 0.0489, -0.4655, 0.6789, 0.002, 0.335, 1.2931, 0.002, 0.0434, 0.843, 0.002, 0.2155, 1.3, 0.002, 0.1558, 1.1561, 0.002, 0.2497, 0.491, 0.001, 0.0727, 0.5322, 0.002, -0.4036, 0.4778, 0.002, -0.2759, 0.7645, 0.1231, -0.2953, 0.5298, 0.1808, -0.3048, 0.7859, 0.002, -0.275, 0.4831, 0.0489, -0.2969, 0.4778, 0.002, 0.1503, 0.2426, 0.1132, 0.0689, 0.2426, 0.0897, 0.1503, 0.2426, 0.032, 0.0705, 0.2426, 0.032, 0.1503, 0.0, 0.0897, 0.0689, 0.0, 0.0897, 0.1503, 0.0, 0.032, 0.0705, 0.0, 0.032, -0.458, 0.2105, 0.111, -0.458, 0.2105, 0.0533, -0.3994, 0.2105, 0.111, -0.3985, 0.2105, 0.0533, -0.42, 0.0176, 0.111, -0.42, 0.0176, 0.0533, -0.3615, 0.0176, 0.111, -0.3605, 0.0176, 0.0533, 0.5456, 1.1619, 0.0313, 0.5329, 1.1402, 0.0313, 0.2269, 0.7878, -0.1301, 0.1923, 0.6332, -0.1541, -0.4655, 0.6534, -0.1301, -0.4174, 0.5046, -0.1541, 0.0418, 0.8183, -0.1015, 0.0518, 0.6057, -0.1541, 0.2889, 1.1515, -0.0764, 0.187, 1.1563, -0.0731, 0.335, 1.2611, -0.0731, 0.2117, 1.2767, -0.055, 0.2381, 0.505, -0.0489, 0.0705, 0.5424, -0.0489, -0.4249, 0.4778, -0.0489, -0.2759, 0.7645, -0.1231, -0.2953, 0.5429, -0.1808, -0.275, 0.488, -0.0489, 0.1503, 0.2426, -0.1132, 0.0689, 0.2426, -0.0897, 0.1503, 0.2426, -0.032, 0.0705, 0.2426, -0.032, 0.1503, 0.0, -0.0897, 0.0689, 0.0, -0.0897, 0.1503, 0.0, -0.032, 0.0705, 0.0, -0.032, -0.458, 0.2105, -0.111, -0.458, 0.2105, -0.0533, -0.3994, 0.2105, -0.111, -0.3985, 0.2105, -0.0533, -0.42, 0.0176, -0.111, -0.42, 0.0176, -0.0533, -0.3615, 0.0176, -0.111, -0.3605, 0.0176, -0.0533, 0.5456, 1.1619, -0.0313, 0.5329, 1.1402, -0.0313, 0.0986, 1.2905, 0.0798, 0.2309, 1.2734, 0.0276, 0.2334, 1.2734, 0.0555, 0.0998, 1.2677, 0.0797, 0.2078, 1.1979, 0.0578, 0.2053, 1.1979, 0.0299, 0.0986, 1.2905, -0.0798, 0.2309, 1.2734, -0.0276, 0.2334, 1.2734, -0.0555, 0.0998, 1.2677, -0.0797, 0.2078, 1.1979, -0.0578, 0.2053, 1.1979, -0.0299, -0.5631, 0.6435, 0.0051, -0.4308, 0.6957, -0.0124, -0.4352, 0.6945, 0.0153, -0.5511, 0.6241, 0.0062, -0.4212, 0.616, 0.0142, -0.4168, 0.6172, -0.0134];
+const SIKA_E=[0, 1, 0, 4, 0, 6, 0, 12, 1, 5, 1, 13, 1, 30, 2, 3, 2, 17, 2, 25, 3, 16, 3, 26, 3, 38, 4, 5, 4, 7, 4, 19, 4, 25, 5, 15, 5, 26, 5, 31, 6, 7, 6, 8, 6, 14, 6, 47, 7, 9, 7, 21, 8, 9, 8, 18, 8, 46, 9, 20, 10, 11, 10, 14, 10, 47, 10, 81, 11, 18, 11, 46, 11, 80, 12, 13, 12, 14, 12, 22, 12, 48, 12, 58, 13, 15, 13, 22, 13, 32, 14, 54, 15, 23, 15, 28, 15, 33, 16, 17, 16, 24, 16, 28, 16, 39, 17, 24, 17, 27, 17, 50, 17, 60, 18, 20, 18, 56, 19, 21, 19, 27, 19, 52, 20, 21, 20, 57, 21, 55, 22, 23, 22, 58, 23, 29, 23, 59, 24, 29, 24, 60, 25, 26, 25, 27, 26, 28, 26, 40, 27, 61, 28, 29, 28, 41, 29, 63, 30, 31, 30, 32, 30, 34, 31, 33, 31, 35, 32, 33, 32, 36, 33, 37, 34, 35, 34, 36, 35, 37, 36, 37, 38, 39, 38, 40, 38, 42, 39, 41, 39, 43, 40, 41, 40, 44, 41, 45, 42, 43, 42, 44, 43, 45, 44, 45, 46, 47, 48, 49, 48, 52, 48, 54, 49, 53, 49, 58, 49, 64, 50, 51, 50, 61, 51, 60, 51, 62, 51, 72, 52, 53, 52, 55, 52, 61, 53, 59, 53, 62, 53, 65, 54, 55, 54, 56, 54, 81, 55, 57, 56, 57, 56, 80, 58, 59, 58, 66, 59, 63, 59, 67, 60, 63, 60, 73, 61, 62, 62, 63, 62, 74, 63, 75, 64, 65, 64, 66, 64, 68, 65, 67, 65, 69, 66, 67, 66, 70, 67, 71, 68, 69, 68, 70, 69, 71, 70, 71, 72, 73, 72, 74, 72, 76, 73, 75, 73, 77, 74, 75, 74, 78, 75, 79, 76, 77, 76, 78, 77, 79, 78, 79, 80, 81, 82, 83, 82, 84, 82, 85, 83, 84, 83, 87, 84, 86, 85, 86, 85, 87, 86, 87, 88, 89, 88, 90, 88, 91, 89, 90, 89, 93, 90, 92, 91, 92, 91, 93, 92, 93, 94, 95, 94, 96, 94, 97, 95, 96, 95, 99, 96, 98, 97, 98, 97, 99, 98, 99];
+const SIKA_PART=[5, 0, 7, 0, 0, 0, 5, 5, 6, 6, 5, 5, 5, 1, 5, 0, 3, 7, 5, 0, 5, 5, 0, 0, 0, 0, 0, 0, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 5, 5, 5, 0, 7, 0, 0, 0, 5, 5, 6, 6, 2, 0, 4, 0, 0, 4, 2, 2, 2, 2, 2, 2, 2, 2, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7];
+const SIKA_PIV={"FL": [0.15, 0.56, 0.064], "FR": [0.15, 0.56, -0.064], "RL": [-0.275, 0.49, 0.075], "RR": [-0.275, 0.49, -0.075], "neck": [0.22, 0.74, 0.0], "ear": [0.18, 1.14, 0.0], "tail": [-0.42, 0.66, 0.0]};
+const deerCv=document.getElementById('deer'), dctx=deerCv.getContext('2d');
+const CAMP=0.15, DEER_LINE='rgba(255,231,150,0.24)';   // yellowish, 1/3 opacity
+const LP={1:SIKA_PIV.FL,2:SIKA_PIV.FR,3:SIKA_PIV.RL,4:SIKA_PIV.RR};
+const NP=SIKA_PIV.neck, EP=SIKA_PIV.ear, TP=SIKA_PIV.tail;
+const LEGPH={1:0.0,2:0.5,3:0.5,4:0.0};
+const DEER={ px:120, S:60, groundY:0, yaw:0, faceT:0, tx:120, speed:6, state:'idle', timer:1.6,
+  moving:false, clock:0, gaitT:0, gaitAmp:0, neck:0, neckT:0 };
+function deerResize(){ deerCv.width=fieldW; deerCv.height=fieldH;
+  const kh=(keyEls['7']?keyEls['7'].getBoundingClientRect().height:44);
+  DEER.S=kh; DEER.groundY=fieldH-gap*0.5; }
+function rotZ(x,y,px,py,c,s){ const dx=x-px,dy=y-py; return [px+dx*c-dy*s, py+dx*s+dy*c]; }
+function rotY(x,z,px,pz,c,s){ const dx=x-px,dz=z-pz; return [px+dx*c-dz*s, pz+dx*s+dz*c]; }
+function deerDraw(){
+  if(!fieldW) return;
+  if(deerCv.width!==fieldW||deerCv.height!==fieldH) deerResize();
+  dctx.clearRect(0,0,deerCv.width,deerCv.height);
+  const t=DEER.clock;
+  // part rotation angles
+  const neckA=DEER.neck + Math.sin(t*0.8)*0.05;                 // neck/head: eased pose + idle sway
+  const earA = Math.sin(t*1.7)*0.09;                            // ears flick (child of neck)
+  const tailA= Math.sin(t*1.15)*0.22;                           // tail swish
+  const cN=Math.cos(neckA),sN=Math.sin(neckA), cE=Math.cos(earA),sE=Math.sin(earA), cT=Math.cos(tailA),sT=Math.sin(tailA);
+  const legC={},legS={};
+  for(const p of [1,2,3,4]){ const a=Math.sin((DEER.gaitT+LEGPH[p])*6.2832)*0.36*DEER.gaitAmp; legC[p]=Math.cos(a); legS[p]=Math.sin(a); }
+  const bob=Math.sin(DEER.gaitT*6.2832*2)*0.012*DEER.gaitAmp;
+  const cy=Math.cos(DEER.yaw),sy=Math.sin(DEER.yaw),cp=Math.cos(CAMP),sp=Math.sin(CAMP),S=DEER.S;
+  const P=new Array((SIKA_V.length/3)*2);
+  for(let i=0,vi=0;i<SIKA_V.length;i+=3,vi++){
+    let x=SIKA_V[i], y=SIKA_V[i+1], z=SIKA_V[i+2]; const pt=SIKA_PART[vi];
+    if(pt>=1&&pt<=4){ const pv=LP[pt]; [x,y]=rotZ(x,y,pv[0],pv[1],legC[pt],legS[pt]); }
+    else if(pt===5){ [x,y]=rotZ(x,y,NP[0],NP[1],cN,sN); }
+    else if(pt===6){ [x,y]=rotZ(x,y,EP[0],EP[1],cE,sE); [x,y]=rotZ(x,y,NP[0],NP[1],cN,sN); } // ear follows head
+    else if(pt===7){ [x,z]=rotY(x,z,TP[0],TP[2],cT,sT); }
+    y+=bob;
+    const rx=x*cy+z*sy, rz=-x*sy+z*cy, y2=y*cp - rz*sp;
+    P[vi*2]=DEER.px+rx*S; P[vi*2+1]=DEER.groundY - y2*S;
+  }
+  dctx.strokeStyle=DEER_LINE; dctx.lineWidth=1.3; dctx.lineJoin='round';
+  dctx.beginPath();
+  for(let e=0;e<SIKA_E.length;e+=2){ const a=SIKA_E[e]*2,b=SIKA_E[e+1]*2;
+    dctx.moveTo(P[a],P[a+1]); dctx.lineTo(P[b],P[b+1]); }
+  dctx.stroke();
+}
+function deerNext(){
+  const r=Math.random(); DEER.neckT=0;
+  if(r<0.5){ DEER.state='walk'; DEER.tx=Math.round((-0.15+Math.random()*1.3)*fieldW); DEER.faceT=(DEER.tx>=DEER.px?0:Math.PI); DEER.timer=14+Math.random()*10; }
+  else if(r<0.68){ DEER.state='graze'; DEER.neckT=-0.92; DEER.timer=6+Math.random()*4; }
+  else if(r<0.8){ DEER.state='look'; DEER.neckT=0.22; DEER.timer=4+Math.random()*3; }
+  else if(r<0.9){ DEER.state='turn'; DEER.faceT=(Math.abs(DEER.faceT)<0.01?Math.PI:0); DEER.timer=4; }
+  else { DEER.state='idle'; DEER.timer=4+Math.random()*3; }
+}
+let deerPrev=0;
+function deerFrame(now){
+  requestAnimationFrame(deerFrame);
+  if(!deerPrev) deerPrev=now;
+  const dt=(now-deerPrev)/1000; if(dt<1/30) return;   // cap ~30fps
+  deerPrev=now; const d=Math.min(dt,0.06);
+  DEER.clock+=d;
+  DEER.neck += (DEER.neckT-DEER.neck)*Math.min(1,d*1.6);              // smooth neck
+  let dyaw=DEER.faceT-DEER.yaw; dyaw=Math.atan2(Math.sin(dyaw),Math.cos(dyaw)); DEER.yaw+=dyaw*Math.min(1,d*1.4); // smooth turn
+  DEER.timer-=d; if(DEER.timer<=0) deerNext();
+  let wantGait=0;
+  if(DEER.state==='walk'){ const diff=DEER.tx-DEER.px; if(Math.abs(diff)>2){ DEER.px+=Math.sign(diff)*DEER.speed*d; wantGait=1; DEER.faceT=(diff>=0?0:Math.PI); } }
+  DEER.moving=wantGait>0; DEER.gaitAmp+=((wantGait?1:0)-DEER.gaitAmp)*Math.min(1,d*2.2);  // smooth gait fade
+  if(DEER.gaitAmp>0.02) DEER.gaitT=(DEER.gaitT+d*0.42)%1;             // slow gait
+  deerDraw();
+}
+deerResize(); deerNext(); requestAnimationFrame(deerFrame);
 
 /* ---- debug hook (for automated tests; harmless in play) ---- */
 window.__gy = {
@@ -788,7 +941,7 @@ window.__gy = {
     field.querySelectorAll('.block,.floatlabel').forEach(e=>e.remove());
     parts=[]; rings=[]; bgRects=[];
     if(bgc) bgc.clearRect(0,0,bgCanvas.width,bgCanvas.height);
-    cols = grid.map(col => col.map(o => ({ value:o.value, level:o.level||1, el:makeBlockEl(o.value,o.level||1,o.value>=100) })));
+    cols = grid.map(col => col.map(o => ({ value:o.value, level:o.level||1, bomb:!!o.bomb, el:makeBlockEl(o.value,o.level||1,o.value>=100,o.bomb) })));
     render();
   },
   clearWith(tokenArr){
@@ -801,7 +954,7 @@ window.__gy = {
   forceSpawns(n, lvl){
     running=true; gameLevel=lvl||3; falling=null;
     field.querySelectorAll('.block,.floatlabel').forEach(e=>e.remove());
-    cols=[[],[],[],[],[]];
+    cols=emptyCols();
     for(let i=0;i<n;i++){ const col=chooseCol(); if(col<0) break; const p=pickUniqueProblem();
       cols[col].push({value:p.value,level:p.level,el:makeBlockEl(p.value,p.level,p.value>=100)}); }
     render();
@@ -814,6 +967,10 @@ window.__gy = {
   fontPx: ()=>parseFloat(exprLine.style.fontSize||getComputedStyle(exprLine).fontSize),
   fits: ()=>exprLine.scrollWidth<=exprLine.clientWidth+2,
   clearScores: ()=>{ scores=[]; saveScores(); },
+  scores: ()=>scores.slice(),
+  cols: ()=>COLS,
+  pause: ()=>{ running=true; paused=false; pauseGame(); return { paused, running, overlayShown: !document.getElementById('pauseOverlay').classList.contains('hidden') }; },
+  resume: ()=>{ resumeGame(); return { paused, running }; },
   forceOver: (s)=>{ running=true; score=s; clears=3; gameLevel=1; gameOver(); },
   ranking: ()=>[...document.querySelectorAll('#ranking li')].map(li=>({ sc:li.querySelector('.sc').textContent, cur:li.classList.contains('cur') })),
   overHasH2: ()=>!!document.querySelector('#overOverlay h2'),
