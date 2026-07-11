@@ -6,7 +6,7 @@
 <title>gyakuzan</title>
 <style>
   :root {
-    --bg1: #05090f; --bg2: #070e1a; --bg3: #0a1526;
+    --bg1: #02030c; --bg2: #030816; --bg3: #061028;
     --panel: rgba(0,0,0,0.34);
     --panel-border: rgba(150,205,255,0.45);
     --text: #eaf1fb; --text-dim: #8ba6cf;
@@ -68,19 +68,19 @@
   @media (orientation: portrait)  { #fieldPanel { flex: 1 1 43%; } #calcPanel { flex: 1 1 57%; } }
 
   .field-wrap {
-    background: var(--panel); border: 1px solid var(--panel-border);
-    border-radius: 20px; padding: 10px; backdrop-filter: blur(12px);
+    background: transparent; border: 1px solid var(--panel-border);
+    border-radius: 20px; padding: 10px;
   }
   .field-wrap.shake { animation: fshake .4s ease; }
   @keyframes fshake { 0%,100%{transform:translate(0,0)} 20%{transform:translate(-5px,3px)} 40%{transform:translate(5px,-3px)} 60%{transform:translate(-4px,-2px)} 80%{transform:translate(4px,2px)} }
   #field {
     position: relative; border-radius: 12px;
-    background: rgba(0,0,0,0.42); overflow: hidden;
+    background: transparent; overflow: hidden;
   }
   #bg { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
   #fx { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
-  /* ambient deer: outline of a posed 3D low-poly skeleton, drawn on the field floor, behind blocks */
-  #deer.deer { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
+  /* ambient deer: full-viewport overlay, drawn above the field frame, roams the whole screen */
+  #deer.deer { position: fixed; inset: 0; pointer-events: none; z-index: 9; }
   .gridline { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(160,205,255,0.16); }
 
   .block {
@@ -95,6 +95,8 @@
   .block.lv1 { background: linear-gradient(150deg, #5d9bda, #3f83cf); }  /* 3ボタンで作れる数はやや暗め */
   .block.lv2 { background: linear-gradient(150deg, #b0cdff, var(--peach)); }
   .block.lv3 { background: linear-gradient(150deg, #c6d2ff, var(--lilac)); }
+  .block.lv4 { background: linear-gradient(150deg, #d0caff, #b3a8ff); }
+  .block.lv5 { background: linear-gradient(150deg, #ddc7ff, #cba0ff); }
   .block.big3 { box-shadow: 0 5px 14px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.6), 0 0 0 2px var(--gold); }
   .block.bomb { background: linear-gradient(150deg, #e6fb84, #a9e24a) !important; color: #223608;
     box-shadow: 0 5px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.65), 0 0 16px 2px rgba(180,240,90,0.55); }
@@ -212,6 +214,7 @@
 </head>
 <body>
 <canvas id="bgfx"></canvas>
+<canvas id="deer" class="deer"></canvas>
 <div class="orb a"></div><div class="orb b"></div><div class="orb c"></div>
 
 <div id="topbar">
@@ -228,7 +231,6 @@
 <div id="game">
   <div id="fieldPanel">
     <div class="field-wrap"><div id="field"><canvas id="bg"></canvas>
-      <canvas class="deer" id="deer"></canvas>
       <canvas id="fx"></canvas></div></div>
   </div>
   <div id="calcPanel">
@@ -314,9 +316,19 @@ function parseTokens(tokens) {
   return { nums, ops };
 }
 function evaluateTokens(tokens){ const p = parseTokens(tokens); return p ? evalTokens(p.nums,p.ops) : null; }
-const PATTERNS = { 3:[[1,1]], 4:[[1,2],[2,1]], 5:[[1,3],[3,1],[2,2],[1,1,1]] };
+/* key = expression length (digits + operators); LV n -> PATTERNS[n+2], so length grows +1 per level */
+const PATTERNS = {
+  3:[[1,1]],
+  4:[[1,2],[2,1]],
+  5:[[1,3],[3,1],[2,2],[1,1,1]],
+  6:[[1,4],[4,1],[2,3],[3,2],[1,1,2],[1,2,1],[2,1,1]],
+  7:[[1,5],[5,1],[2,4],[4,2],[3,3],[1,1,3],[1,3,1],[3,1,1],[1,2,2],[2,1,2],[2,2,1],[1,1,1,1]]
+};
+/* answer (falling number) digit cap by level: LV<=3 -> 3 digits, LV4 -> 4, LV5+ -> 5 */
+function maxValForLevel(level){ return level<=3 ? 999 : level===4 ? 9999 : 99999; }
 function shuffle(a){ const r=a.slice(); for(let i=r.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[r[i],r[j]]=[r[j],r[i]];} return r; }
-function generateProblem(level, maxVal=999){
+function generateProblem(level, maxVal){
+  if(maxVal===undefined) maxVal=maxValForLevel(level);
   const pats = PATTERNS[level+2];
   for(let a=0;a<300;a++){
     const pat = pats[Math.floor(Math.random()*pats.length)];
@@ -401,7 +413,7 @@ function emptyCols(){ return Array.from({length:COLS},()=>[]); }
 const field=document.getElementById('field');
 const exprLine=document.getElementById('exprLine');
 const display=document.getElementById('display');
-const LEVELCOLOR={1:'#4aa4f0',2:'#6f9ff7',3:'#9db4ff'};
+const LEVELCOLOR={1:'#4aa4f0',2:'#6f9ff7',3:'#9db4ff',4:'#b3a8ff',5:'#cba0ff'};
 /* ---- FX: bg rounded-rect highlights (behind blocks) + particles (over blocks) ---- */
 const bgCanvas=document.getElementById('bg'), bgc=bgCanvas.getContext('2d');
 const fxCanvas=document.getElementById('fx'), fxc=fxCanvas.getContext('2d');
@@ -480,7 +492,9 @@ function blockLeft(c){ return c*cellW+(cellW-blockW)/2; }
 function blockTop(r){ return fieldH-(r+1)*cellH+(cellH-blockH)/2; } // r=0 bottom
 function styleBlock(el,value){
   el.style.width=blockW+'px'; el.style.height=blockH+'px';
-  el.style.fontSize=(String(value).length>=3?blockH*0.42:blockH*0.5)+'px';
+  const len=String(value).length;
+  const f = len<=2 ? 0.5 : len===3 ? 0.42 : len===4 ? 0.35 : 0.29;   // shrink for 4-5 digit answers
+  el.style.fontSize=(blockH*f)+'px';
 }
 
 let running=false, score=0, clears=0, gameLevel=1;
@@ -490,7 +504,7 @@ let nextCol=0, spawnTimer=0, lastFrame=0;
 let resultTimeout=null;
 let tokens=[];
 
-const LEVEL_UP=[0,6,15];
+const LEVEL_UP=[0,6,15,28,45];  // clears needed to reach LV2,3,4,5
 const FALL_MULT=0.6;
 function fallSpeed(){ return (cellH*0.6*FALL_MULT)*(1+clears*0.015)*(1+(gameLevel-1)*0.18); }
 
@@ -664,7 +678,7 @@ function finishClear(removed,info){
   let base=0; removed.forEach(b=>base+=(b.value||0));
   const gained=base*mult;
   score+=gained; clears++;
-  if(gameLevel<3 && clears>=LEVEL_UP[gameLevel]) gameLevel++;
+  if(gameLevel<5 && clears>=LEVEL_UP[gameLevel]) gameLevel++;
   updateHUD();
   // sound: single = birdsong, combo = chime, special/ultra = grand
   if(special){ floatText(label); specialSound(ultra); }
@@ -875,14 +889,14 @@ const NP=SIKA_PIV.neck, EP=SIKA_PIV.ear, TP=SIKA_PIV.tail;
 const LEGPH={1:0.0,2:0.5,3:0.5,4:0.0};
 const DEER={ px:120, S:60, groundY:0, yaw:0, faceT:0, tx:120, speed:6, state:'idle', timer:1.6,
   moving:false, clock:0, gaitT:0, gaitAmp:0, neck:0, neckT:0 };
-function deerResize(){ deerCv.width=fieldW; deerCv.height=fieldH;
-  const kh=(keyEls['7']?keyEls['7'].getBoundingClientRect().height:44);
-  DEER.S=kh; DEER.groundY=fieldH-gap*0.5; }
+function deerResize(){ deerCv.width=window.innerWidth; deerCv.height=window.innerHeight;
+  const kh=(keyEls['7']?keyEls['7'].getBoundingClientRect().height:44); DEER.S=kh; }
 function rotZ(x,y,px,py,c,s){ const dx=x-px,dy=y-py; return [px+dx*c-dy*s, py+dx*s+dy*c]; }
 function rotY(x,z,px,pz,c,s){ const dx=x-px,dz=z-pz; return [px+dx*c-dz*s, pz+dx*s+dz*c]; }
 function deerDraw(){
   if(!fieldW) return;
-  if(deerCv.width!==fieldW||deerCv.height!==fieldH) deerResize();
+  if(deerCv.width!==window.innerWidth||deerCv.height!==window.innerHeight) deerResize();
+  const fr=field.getBoundingClientRect(); DEER.groundY=fr.bottom-gap*0.5;   // stand on the block-bottom line (viewport coords)
   dctx.clearRect(0,0,deerCv.width,deerCv.height);
   const t=DEER.clock;
   // part rotation angles
@@ -913,7 +927,7 @@ function deerDraw(){
 }
 function deerNext(){
   const r=Math.random(); DEER.neckT=0;
-  if(r<0.5){ DEER.state='walk'; DEER.tx=Math.round((-0.15+Math.random()*1.3)*fieldW); DEER.faceT=(DEER.tx>=DEER.px?0:Math.PI); DEER.timer=14+Math.random()*10; }
+  if(r<0.5){ DEER.state='walk'; DEER.tx=Math.round((-0.18+Math.random()*1.36)*window.innerWidth); DEER.faceT=(DEER.tx>=DEER.px?0:Math.PI); DEER.timer=14+Math.random()*10; }
   else if(r<0.68){ DEER.state='graze'; DEER.neckT=-0.92; DEER.timer=6+Math.random()*4; }
   else if(r<0.8){ DEER.state='look'; DEER.neckT=0.22; DEER.timer=4+Math.random()*3; }
   else if(r<0.9){ DEER.state='turn'; DEER.faceT=(Math.abs(DEER.faceT)<0.01?Math.PI:0); DEER.timer=4; }
@@ -981,7 +995,8 @@ window.__gy = {
   forceOver: (s)=>{ running=true; score=s; clears=3; gameLevel=1; gameOver(); },
   ranking: ()=>[...document.querySelectorAll('#ranking li')].map(li=>({ sc:li.querySelector('.sc').textContent, cur:li.classList.contains('cur') })),
   overHasH2: ()=>!!document.querySelector('#overOverlay h2'),
-  retryText: ()=>document.getElementById('retryBtn').textContent
+  retryText: ()=>document.getElementById('retryBtn').textContent,
+  deerAt: (x)=>{ DEER.px=x; DEER.tx=x; DEER.state='idle'; DEER.timer=1e9; return {px:DEER.px, w:window.innerWidth}; }
 };
 </script>
 </body>
