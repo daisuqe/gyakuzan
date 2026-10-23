@@ -1,8 +1,16 @@
+<!--
+  gyakuzan
+  Copyright (c) 2026 daisuqe. All rights reserved.
+  No copying, modification, redistribution, or reposting without prior written permission.
+  無断での複製・改変・再配布・転載を禁じます。
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="author" content="daisuqe">
+<meta name="copyright" content="Copyright (c) 2026 daisuqe. All rights reserved.">
 <title>gyakuzan</title>
 <style>
   :root {
@@ -209,8 +217,35 @@
     transition: transform .08s ease;
   }
   .btn:active { transform: scale(.96); }
-  .hidden { display: none !important; }
-</style>
+  .menu { display: flex; flex-direction: column; align-items: stretch; gap: 12px; width: min(260px, 70vw); }
+  .btn.sub { background: rgba(255,255,255,0.08); color: var(--text); box-shadow: 0 0 0 1px rgba(100,196,255,0.35); }
+  #appsBtn { position: absolute; top: max(16px, env(safe-area-inset-top)); right: max(16px, env(safe-area-inset-right));
+    width: 32px; height: 32px; padding: 0; border: none; background: none; cursor: pointer; opacity: .7; }
+  #appsBtn:hover { opacity: 1; }
+  #appsBtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  #appsIcon { width: 32px; height: 32px; display: block; image-rendering: pixelated; }
+  #appsModal { position: fixed; inset: 0; z-index: 20; background: rgba(0,0,0,.5);
+    display: flex; align-items: center; justify-content: center; padding: 24px; }
+  #appsModal .panel { width: min(380px,100%); box-sizing: border-box; padding: 22px 20px; border-radius: 10px; text-align: center;
+    background: rgba(6,16,40,.94); border: 1px solid rgba(100,196,255,0.45); color: var(--text); }
+  #appsModal p { white-space: pre-line; max-width: none; color: var(--text); margin: 0 0 16px; }
+  #appsModal .row { display: flex; justify-content: center; gap: 14px; }
+  #appsModal .btn { box-sizing: border-box; width: 110px; height: 36px; padding: 0; }
+  #copyBtn { position: absolute; left: 50%; transform: translateX(-50%); bottom: max(8px, env(safe-area-inset-bottom));
+    border: none; background: none; padding: 4px 8px; font-family: inherit; font-size: 11px; color: var(--text-dim);
+    opacity: .6; cursor: pointer; white-space: nowrap; }
+  #copyBtn:hover { opacity: 1; }
+  #copyBtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; opacity: 1; }
+  #licModal { position: fixed; inset: 0; z-index: 20; background: rgba(0,0,0,.5);
+    display: flex; align-items: center; justify-content: center; padding: 16px; }
+  #licModal .panel { width: min(520px,100%); max-height: 100%; box-sizing: border-box; padding: 18px 16px; border-radius: 10px;
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    background: rgba(6,16,40,.94); border: 1px solid rgba(100,196,255,0.45); color: var(--text); }
+  #licModal h2 { margin: 0; }
+  #licText { margin: 0; overflow: auto; width: 100%; text-align: left; white-space: pre-wrap; font-family: inherit;
+    font-size: clamp(11px,1.8vmin,13px); line-height: 1.7; color: var(--text-dim); }
+  #licModal .btn { padding: 9px 36px; flex: none; }
+  .hidden { display: none !important; }</style>
 </head>
 <body>
 <canvas id="bgfx"></canvas>
@@ -263,17 +298,50 @@
 </div>
 
 <div class="overlay" id="startOverlay">
+  <button id="appsBtn" aria-label="App list"><canvas id="appsIcon" width="16" height="16"></canvas></button>
   <h2>gyakuzan</h2>
+  <div class="menu">
+    <button class="btn" id="startBtn">START</button>
+    <button class="btn sub" id="howBtn">HOW TO PLAY</button>
+    <button class="btn sub" id="menuSoundBtn">SOUND: ON</button>
+  </div>
+  <button id="copyBtn">© 2026 daisuqe. All rights reserved.</button>
+</div>
+<div id="licModal" class="hidden" role="dialog" aria-modal="true" aria-label="License">
+  <div class="panel">
+    <h2>LICENSE</h2>
+    <pre id="licText"></pre>
+    <button class="btn" id="licClose">Close</button>
+  </div>
+</div>
+<div id="appsModal" class="hidden" role="dialog" aria-modal="true">
+  <div class="panel">
+    <p id="appsMsg"></p>
+    <div class="row">
+      <button class="btn" id="appsYes">Yes</button>
+      <button class="btn sub" id="appsNo">No</button>
+    </div>
+  </div>
+</div>
+<div class="overlay hidden" id="howOverlay">
+  <h2>HOW TO PLAY</h2>
   <p class="rules">
+    ✦ Build a formula that equals a falling block, then press <b>＝</b><br>
+    ✦ Each key can be used <b>once</b> per answer (C is unlimited)<br>
     ✦ Clear a <b>3-digit block, all digits, or all keys</b> to clear nearby blocks too<br>
     ✦ Numbers you type can be <b>up to 5 digits</b><br>
     ✦ Adding 0, subtracting 0, multiplying by 1, and dividing by 1 are <b>not allowed</b>
   </p>
-  <button class="btn" id="startBtn">START</button>
+  <button class="btn sub" data-back="startOverlay">BACK</button>
 </div>
 <div class="overlay hidden" id="pauseOverlay">
   <h2>PAUSE</h2>
-  <button class="btn" id="resumeBtn">Resume</button>
+  <div class="menu">
+    <button class="btn" id="resumeBtn">Resume</button>
+    <button class="btn sub" id="restartBtn">Restart</button>
+    <button class="btn sub" id="pauseSoundBtn">SOUND: ON</button>
+    <button class="btn sub" id="quitBtn">Menu</button>
+  </div>
 </div>
 <div class="overlay hidden" id="overOverlay">
   <div class="big" id="finalScore">0</div>
@@ -773,6 +841,8 @@ function press(k){
 }
 document.getElementById('keys').addEventListener('click',e=>{ const k=e.target.dataset&&e.target.dataset.k; if(k)press(k); });
 window.addEventListener('keydown',e=>{
+  if(document.querySelector('[role=dialog]:not(.hidden)')) return;
+  if(e.target.tagName==='BUTTON'&&(e.key==='Enter'||e.key===' ')) return;
   if(e.key>='0'&&e.key<='9')press(e.key);
   else if(['+','-','*','/'].includes(e.key))press(e.key);
   else if(e.key==='Enter'||e.key==='=')press('=');
@@ -833,10 +903,73 @@ document.getElementById('retryBtn').addEventListener('click',start);
 
 // sound toggle
 const muteBtn=document.getElementById('muteBtn');
-muteBtn.addEventListener('click',()=>{
+function toggleMute(){
   muted=!muted; muteBtn.textContent=muted?'♪̸':'♪'; muteBtn.classList.toggle('off',muted);
   Music.setMuted(muted);
-});
+  for(const id of ['menuSoundBtn','pauseSoundBtn']) document.getElementById(id).textContent=muted?'SOUND: OFF':'SOUND: ON';
+}
+muteBtn.addEventListener('click',toggleMute);
+document.getElementById('menuSoundBtn').addEventListener('click',toggleMute);
+document.getElementById('pauseSoundBtn').addEventListener('click',toggleMute);
+
+// app list link (start screen)
+const APPS_ICON = [
+  '......###...###.','.....#...#.#...#','.....#...#.#...#','.....#..#..#..#.',
+  '.....#..#..#..#.','....##..####..#.','..##.......#..#.','.#............#.',
+  '#.............#.','#..............#','############...#','............#..#',
+  '.###########...#','.#............#.','..##........##..','....########....'
+];
+(()=>{
+  const ctx=document.getElementById('appsIcon').getContext('2d');
+  ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()||'#64c4ff';
+  APPS_ICON.forEach((row,y)=>{ for(let x=0;x<row.length;x++) if(row[x]==='#') ctx.fillRect(x,y,1,1); });
+  const qlang=new URLSearchParams(location.search).get('lang');
+  const ja=(qlang||navigator.language||'').toLowerCase().startsWith('ja');
+  document.getElementById('appsMsg').textContent=ja
+    ? 'アプリ一覧に移動します。\nこのゲームを離れますがよろしいですか？'
+    : 'This will take you to the app list.\nDo you want to leave this game?';
+  const modal=document.getElementById('appsModal'), btn=document.getElementById('appsBtn');
+  const no=document.getElementById('appsNo'), yes=document.getElementById('appsYes');
+  const close=()=>{ modal.classList.add('hidden'); btn.focus(); };
+  btn.addEventListener('click',()=>{ modal.classList.remove('hidden'); no.focus(); });
+  yes.addEventListener('click',()=>{ location.href='https://daisuqe.github.io/'; });
+  no.addEventListener('click',close);
+  modal.addEventListener('click',e=>{ if(e.target===modal) close(); });
+  modal.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){ e.preventDefault(); close(); }
+    else if(e.key==='ArrowLeft'||e.key==='ArrowRight'){ e.preventDefault(); (document.activeElement===yes?no:yes).focus(); }
+  });
+})();
+
+// license viewer (text mirrors the LICENSE file)
+(()=>{
+  const LICENSE_TEXT = `Copyright (c) 2026 daisuqe. All rights reserved.
+
+This game ("gyakuzan"), including its source code, graphics, music data, and
+text, is the property of the copyright holder. No license is granted to copy,
+modify, distribute, sublicense, sell, or publish any part of it, in source or
+compiled form, without prior written permission from the copyright holder.
+You may play the game as published at its official page.
+
+本ゲーム「gyakuzan」(ソースコード、画像、音楽データ、文章を含む)の著作権は、
+daisuqe が保有します。著作権者の事前の書面による許可なく、全部または一部を、
+複製、改変、再配布、転載、販売、公開することを禁じます。
+公式に公開されているページで、遊ぶことは自由です。`;
+  document.getElementById('licText').textContent=LICENSE_TEXT;
+  const modal=document.getElementById('licModal'), open=document.getElementById('copyBtn'), cl=document.getElementById('licClose');
+  const close=()=>{ modal.classList.add('hidden'); open.focus(); };
+  open.addEventListener('click',()=>{ modal.classList.remove('hidden'); cl.focus(); });
+  cl.addEventListener('click',close);
+  modal.addEventListener('click',e=>{ if(e.target===modal) close(); });
+  modal.addEventListener('keydown',e=>{ if(e.key==='Escape'){ e.preventDefault(); close(); } });
+})();
+
+// menu navigation
+const showOnly=id=>{ for(const o of document.querySelectorAll('.overlay')) o.classList.toggle('hidden',o.id!==id); };
+document.getElementById('howBtn').addEventListener('click',()=>showOnly('howOverlay'));
+for(const b of document.querySelectorAll('[data-back]')) b.addEventListener('click',()=>showOnly(b.dataset.back));
+document.getElementById('restartBtn').addEventListener('click',start);
+document.getElementById('quitBtn').addEventListener('click',()=>{ paused=false; running=false; showOnly('startOverlay'); });
 
 // pause / resume — shows an opaque overlay so the board is hidden
 let paused=false;
